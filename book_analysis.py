@@ -3,9 +3,9 @@ import pickle
 import string
 import operator
 import math
+import random
 from os.path import exists
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from textblob import TextBlob as tb
+#from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 
 def save_book(book_name, link):
@@ -50,7 +50,7 @@ def read(text):
                 start = i + 1
         return text_read
     else:
-        print('wtf, not even a book')
+        print('not a book')
 
 
 # TODO strip the book text of stuff before/after
@@ -111,7 +111,6 @@ def find_tfidf(dict_list):
         res_list.append(tfidf_dict)
     return res_list
 
-
 def analyze_tfidf(dict_list):
     '''uses sorts and prints dict_list for TF-IDF dict'''
     sorted_dict_list = []
@@ -122,27 +121,58 @@ def analyze_tfidf(dict_list):
         for word, score in sorted_dict[:5]:
             print('\tWord: {}, TF-IDF: {}'.format(word, round(score, 5)))
 
+def markoff_analyis(word_list, length):
+    '''takes in list of words, returns dictionary mapping prefixes to suffixes
+    length is lenght of prefixes and suffixes'''
+    markoff_dict = dict()
+    for i, w in enumerate(word_list[:-(length+1)]):
+        suffix_list = markoff_dict.get(w + word_list[i+1], [])
+        markoff_dict[w] = suffix_list + [word_list[i+length]]
+    return markoff_dict
 
-dict_1 = analyze('pride_and_prejudice', 'http://www.gutenberg.org/files/1342/1342-0.txt')
-dict_2 = analyze('sense_and_sensibility', 'http://www.gutenberg.org/cache/epub/161/pg161.txt')
-dict_3 = analyze('emma', 'http://www.gutenberg.org/files/158/158-0.txt')
-dict_4 = analyze('persuasion', 'http://www.gutenberg.org/cache/epub/105/pg105.txt')
-dict_5 = analyze('study_in_scarlet', 'http://www.gutenberg.org/files/244/244-0.txt')
-dict_6 = analyze('sign_of_four', 'http://www.gutenberg.org/cache/epub/2097/pg2097.txt')
-dict_7 = analyze('adventures_of_sherlock', 'http://www.gutenberg.org/files/48320/48320-0.txt')
-dict_8 = analyze('memiors_of_sherlock', 'http://www.gutenberg.org/files/834/834-0.txt')
-# find_tfidf([pride_and_prejudice, study_in_scarlet])
+def markoff_chain(length, text_1, text_2):
+    markoff_1 = markoff_analyis(text_1, 1)
+    markoff_2 = markoff_analyis(text_2, 1)
+    keys_1 = list(markoff_1.keys())
+    keys_2 = list(markoff_2.keys())
 
-dict_list = [dict_1, dict_2, dict_3, dict_4, dict_5, dict_6, dict_7, dict_8]
+    # Randomly chooses text_1 or text_2 and randomly chooses word from keys of
+    # dictionary
+    if random.randint(0,10) < 5:
+        keys = keys_1
+        print(type(keys))
+        key = keys[random.randint(0, len(keys))]
+        word = markoff_1[key]
+    else:
+        keys = keys_2
+        print(type(keys))
+        key = keys[random.randint(0, len(keys))]
+        word = markoff_2[key]
 
-# print(find_tfidf(dict_list))
+    # sets return variable text to randomly chosen word
+    text = str(word[0])
+    for i in range(length):
+        new_word = ''
+        if random.randint(0, 10) < 5 and word in keys_1:
+            suffixes = markoff_1[word]
+        elif word in keys_2:
+            suffixes = markoff_2[word]
+        else:
+            if random.randint(0, 10) > 5:
+                suffixes = keys_1
+            else:
+                suffixes = keys_2
+        new_word = suffixes[random.randint(0, len(suffixes))]
+        text = text + ' ' + new_word
+    print(text)
 
-tfidf_dicts = find_tfidf(dict_list)
-analyze_tfidf(tfidf_dicts)
 
-# for i, doc in enumerate(doc_list):
-#     print("Top words in document {}".format(i + 1))
-#     scores = {word: tfidf(word, doc, doc_list) for word in doc.words}
-    # sorted_words = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    # for word, score in sorted_words[:3]:
-        # print("\tWord: {}, TF-IDF: {}".format(word, round(score, 5)))
+text = get_book('pride_and_prejudice') + get_book('pride_and_prejudice') + \
+       get_book('sense_and_sensibility') + get_book('persuasion')
+austen_word_list = read(text)
+
+text = get_book('adventures_of_sherlock') + get_book('study_in_scarlet') + \
+       get_book('memiors_of_sherlock') + get_book('sign_of_four')
+sherlock_word_list = read(text)
+
+markoff_chain(20, austen_word_list, sherlock_word_list)
