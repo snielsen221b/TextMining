@@ -105,6 +105,7 @@ def analyze_sentiment(book_name):
     return analyzer.polarity_score(book)
 
 
+
 # Grab data from project gutenberg
 save_book('will_to_power_1_2', 'http://www.gutenberg.org/files/52914/52914-0.txt')
 will_to_power_1_2 = load_data('will_to_power_1_2')
